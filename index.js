@@ -22,14 +22,14 @@ function loadFile(filename) {
 }
 
 // Constants
-const waterPosition = new THREE.Vector3(0, 0, 0.8);
+const waterPosition = new THREE.Vector3(0, 0, 0.5);
 const near = 0.;
 const far = 2.;
 const waterSize = 512;
 
 // Create directional light
 // TODO Replace this by a THREE.DirectionalLight and use the provided matrix (check that it's an Orthographic matrix as expected)
-const light = [0., 0., -1.];
+const light = [0., 0.2, -0.5];
 const lightCamera = new THREE.OrthographicCamera(-1.2, 1.2, 1.2, -1.2, near, far);
 lightCamera.position.set(0., 0., 1.5);
 lightCamera.lookAt(0, 0, 0);
@@ -64,18 +64,33 @@ const temporaryRenderTarget = new THREE.WebGLRenderTarget(width, height);
 
 // Clock
 const clock = new THREE.Clock();
-
 // Ray caster
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const targetgeometry = new THREE.PlaneGeometry(2, 2);
+const targetgeometry = new THREE.PlaneGeometry(1, 1);
 for (let vertex of targetgeometry.vertices) {
   vertex.z = waterPosition.z;
 }
 const targetmesh = new THREE.Mesh(targetgeometry);
 
 // Geometries
+//fish bowl geometry
+//TODO: add more points so that fishbowl has a thickness
+let points = [new THREE.Vector2(0,0), new THREE.Vector2(-1,0),
+              new THREE.Vector2(-1.3,-0.5), new THREE.Vector2(-1.2,0.75),
+              new THREE.Vector2(-1.1,1), new THREE.Vector2(-1,1.25),
+              new THREE.Vector2(-0.9,1.5), new THREE.Vector2(-1,1.75),
+              new THREE.Vector2(-1.3,2), new THREE.Vector2(-1.2,2),
+              new THREE.Vector2(-0.9,1.75), new THREE.Vector2(-0.8,1.5),
+              new THREE.Vector2(-0.9,1.25), new THREE.Vector2(-1,1),
+              new THREE.Vector2(-1.1,0.75), new THREE.Vector2(-1.2,-0.5),
+              new THREE.Vector2(-0.9,0), new THREE.Vector2(0,0)];
+
 const waterGeometry = new THREE.PlaneBufferGeometry(2, 2, waterSize, waterSize);
+//const waterGeometry =new THREE.TorusGeometry(1,0.4,10,6,Math.PI*2);
+// const waterGeometry = new THREE.BoxGeometry(1,1,1,waterSize,waterSize,waterSize);
+////const waterGeometry = new THREE.TetrahedronGeometry();
+//waterGeometry.rotateX(Math.PI / 4.);
 const vertices = new Float32Array([
   -1, -1, -1,
   -1, -1, 1,
@@ -116,7 +131,9 @@ const indices = new Uint32Array([
 ]);
 
 // Environment
-const floorGeometry = new THREE.PlaneBufferGeometry(100, 100, 1, 1);
+//TODO: make geometry an different (fish tank esk) shape (probably lab code about lathing you can use)
+const floorGeometry = new THREE.BoxGeometry(50, 100, 5);
+const tankGeometry = new THREE.CircleGeometry(1, 32);
 
 const objLoader = new THREE.OBJLoader();
 let shark;
@@ -131,6 +148,19 @@ const sharkLoaded = new Promise((resolve) => {
 
     shark = sharkGeometry;
     resolve();
+  });
+});
+let tree;
+const treeLoaded = new Promise((resolve) => {
+  objLoader.load('assets/lowpolytree.obj', (treeGeometry) => {
+    treeGeometry = treeGeometry.children[0].geometry;
+    treeGeometry.computeVertexNormals();
+    treeGeometry.scale(0.01,0.01,0.01);
+    treeGeometry.rotateX(Math.PI / 2.);
+    treeGeometry.translate(.2,.3,0);
+
+    tree = treeGeometry;
+    resolve()
   });
 });
 
@@ -172,10 +202,22 @@ const plantLoaded = new Promise((resolve) => {
 // Skybox
 const cubetextureloader = new THREE.CubeTextureLoader();
 
+// const skybox = cubetextureloader.load([
+//   'assets/TropicalSunnyDay_px.jpg', 'assets/TropicalSunnyDay_nx.jpg',
+//   'assets/TropicalSunnyDay_py.jpg', 'assets/TropicalSunnyDay_ny.jpg',
+//   'assets/TropicalSunnyDay_pz.jpg', 'assets/TropicalSunnyDay_nz.jpg',
+// ]);
+
+// const skybox = cubetextureloader.load([
+//   'assets/house_px.jpg', 'assets/house_nx.jpg',
+//   'assets/house_py.jpg', 'assets/house_ny.jpg',
+//   'assets/house_pz.jpg', 'assets/house_nz.jpg',
+// ]);
+
 const skybox = cubetextureloader.load([
-  'assets/TropicalSunnyDay_px.jpg', 'assets/TropicalSunnyDay_nx.jpg',
-  'assets/TropicalSunnyDay_py.jpg', 'assets/TropicalSunnyDay_ny.jpg',
-  'assets/TropicalSunnyDay_pz.jpg', 'assets/TropicalSunnyDay_nz.jpg',
+  'assets/nvposx.bmp', 'assets/nvnegx.bmp',
+  'assets/nvposy.bmp', 'assets/nvnegy.bmp',
+  'assets/nvposz.bmp', 'assets/nvnegz.bmp',
 ]);
 
 scene.background = skybox;
@@ -187,6 +229,10 @@ class WaterSimulation {
     this._camera = new THREE.OrthographicCamera(0, 1, 1, 0, 0, 2000);
 
     this._geometry = new THREE.PlaneBufferGeometry(2, 2);
+    //this._geometry = new THREE.BoxGeometry();
+    //this._geometry = new THREE.TorusGeometry(1,0.4,10,6,Math.PI*2);
+    //this._geometry.translate(waterPosition.x,waterPosition.y,waterPosition.z)
+    //this._geometry.rotateX(Math.PI / 4.); //too much for computer to handle
 
     this._targetA = new THREE.WebGLRenderTarget(waterSize, waterSize, {type: THREE.FloatType});
     this._targetB = new THREE.WebGLRenderTarget(waterSize, waterSize, {type: THREE.FloatType});
@@ -202,7 +248,7 @@ class WaterSimulation {
         .then(([vertexShader, dropFragmentShader, updateFragmentShader]) => {
       const dropMaterial = new THREE.RawShaderMaterial({
         uniforms: {
-            center: { value: [0, 0] },
+            center: { value: [0,0] },
             radius: { value: 0 },
             strength: { value: 0 },
             texture: { value: null },
@@ -307,7 +353,7 @@ class Water {
 class EnvironmentMap {
 
   constructor() {
-    this.size = 1024;
+    this.size = 500;
     this.target = new THREE.WebGLRenderTarget(this.size, this.size, {type: THREE.FloatType});
 
     const shadersPromises = [
@@ -468,6 +514,43 @@ class Environment {
 
 }
 
+//making a class for glass objects
+class Glass {
+
+  constructor(glassGeometry) {
+    this.geometry = glassGeometry;
+
+    const shadersPromises = [
+      loadFile('shaders/glass/vertex.glsl'),
+      loadFile('shaders/glass/fragment.glsl')
+    ];
+
+    this.loaded = Promise.all(shadersPromises)
+        .then(([vertexShader, fragmentShader]) => {
+      this.material = new THREE.ShaderMaterial({
+        uniforms: {
+            light: { value: light },
+            water: { value: null },
+            envMap: { value: null },
+            skybox: { value: skybox },
+        },
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+      });
+      this.material.extensions = {
+        derivatives: true
+      };
+
+      this.mesh = new THREE.Mesh(this.geometry, this.material);
+      this.mesh.position.set(waterPosition.x, waterPosition.y, waterPosition.z);
+    });
+  }
+
+  setEnvMapTexture(envMap) {
+    this.material.uniforms['envMap'].value = envMap;
+  }
+
+}
 
 class Debug {
 
@@ -511,6 +594,13 @@ class Debug {
 const waterSimulation = new WaterSimulation();
 
 const water = new Water();
+const bowlGeometry = new THREE.LatheGeometry(points);
+// const bowlGeometry = new THREE.BoxGeometry(1,1,1);
+bowlGeometry.computeVertexNormals();
+// bowlGeometry.scale(1,.15,1);
+bowlGeometry.translate(0,-0.5,0);
+bowlGeometry.rotateX(Math.PI/2);
+const bowl = new Glass(bowlGeometry);
 
 const environmentMap = new EnvironmentMap();
 const environment = new Environment();
@@ -552,9 +642,11 @@ function animate() {
   renderer.clear();
 
   water.mesh.visible = false;
+  bowl.mesh.visible = false;
   renderer.render(scene, camera);
 
   water.setEnvMapTexture(temporaryRenderTarget.texture);
+  bowl.setEnvMapTexture(temporaryRenderTarget.texture);
 
   // Then render the final scene with the refractive water
   renderer.setRenderTarget(null);
@@ -562,6 +654,7 @@ function animate() {
   renderer.clear();
 
   water.mesh.visible = true;
+  bowl.mesh.visible = true;
   renderer.render(scene, camera);
 
   controls.update();
@@ -589,23 +682,27 @@ function onMouseMove(event) {
 const loaded = [
   waterSimulation.loaded,
   water.loaded,
+  bowl.loaded,
   environmentMap.loaded,
   environment.loaded,
   caustics.loaded,
   debug.loaded,
   sharkLoaded,
+  treeLoaded,
   rockLoaded,
   plantLoaded,
 ];
 
 Promise.all(loaded).then(() => {
-  const envGeometries = [floorGeometry, shark, rock1, rock2, plant];
+  // environment has everything that is under water
+  const envGeometries = [tankGeometry, shark, tree, rock1, rock2, plant];
 
   environmentMap.setGeometries(envGeometries);
   environment.setGeometries(envGeometries);
 
   environment.addTo(scene);
-  scene.add(water.mesh);
+  // scene.add(water.mesh);
+  scene.add(bowl.mesh);
 
   caustics.setDeltaEnvTexture(1. / environmentMap.size);
 
