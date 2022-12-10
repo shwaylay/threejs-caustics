@@ -10,6 +10,7 @@ const height = canvas.height;
 // Colors
 const black = new THREE.Color('black');
 const white = new THREE.Color('white');
+const blue =  new THREE.Color('blue');
 
 function loadFile(filename) {
   return new Promise((resolve, reject) => {
@@ -22,7 +23,7 @@ function loadFile(filename) {
 }
 
 // Constants
-const waterPosition = new THREE.Vector3(0, 0, 0.5);
+const waterPosition = new THREE.Vector3(0, 0, 1);
 const near = 0.;
 const far = 2.;
 const waterSize = 512;
@@ -56,8 +57,8 @@ controls.target = waterPosition;
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2. - 0.1;
 
-controls.minDistance = 1.5;
-controls.maxDistance = 3.;
+controls.minDistance = 3.5;
+controls.maxDistance = 5.;
 
 // Target for computing the water refraction
 const temporaryRenderTarget = new THREE.WebGLRenderTarget(width, height);
@@ -75,18 +76,19 @@ const targetmesh = new THREE.Mesh(targetgeometry);
 
 // Geometries
 //fish bowl geometry
-//TODO: add more points so that fishbowl has a thickness
 let points = [new THREE.Vector2(0,0), new THREE.Vector2(-1,0),
               new THREE.Vector2(-1.3,-0.5), new THREE.Vector2(-1.2,0.75),
               new THREE.Vector2(-1.1,1), new THREE.Vector2(-1,1.25),
               new THREE.Vector2(-0.9,1.5), new THREE.Vector2(-1,1.75),
-              new THREE.Vector2(-1.3,2), new THREE.Vector2(-1.2,2),
+              new THREE.Vector2(-1.3,1.7), new THREE.Vector2(-1.2,1.7),
               new THREE.Vector2(-0.9,1.75), new THREE.Vector2(-0.8,1.5),
               new THREE.Vector2(-0.9,1.25), new THREE.Vector2(-1,1),
               new THREE.Vector2(-1.1,0.75), new THREE.Vector2(-1.2,-0.5),
               new THREE.Vector2(-0.9,0), new THREE.Vector2(0,0)];
 
-const waterGeometry = new THREE.PlaneBufferGeometry(2, 2, waterSize, waterSize);
+// const waterGeometry = new THREE.CircleGeometry(1.2,32);
+const waterGeometry = new THREE.PlaneBufferGeometry(1.6,1.6, waterSize, waterSize);
+waterGeometry.translate(0,0,1.25);
 //const waterGeometry =new THREE.TorusGeometry(1,0.4,10,6,Math.PI*2);
 // const waterGeometry = new THREE.BoxGeometry(1,1,1,waterSize,waterSize,waterSize);
 ////const waterGeometry = new THREE.TetrahedronGeometry();
@@ -132,7 +134,8 @@ const indices = new Uint32Array([
 
 // Environment
 //TODO: make geometry an different (fish tank esk) shape (probably lab code about lathing you can use)
-const floorGeometry = new THREE.BoxGeometry(50, 100, 5);
+const floorGeometry = new THREE.BoxGeometry(5, 5, 1);
+floorGeometry.translate(0,0,-0.6);
 const tankGeometry = new THREE.CircleGeometry(1, 32);
 
 const objLoader = new THREE.OBJLoader();
@@ -222,16 +225,20 @@ const skybox = cubetextureloader.load([
 
 scene.background = skybox;
 
+const floor = new THREE.TextureLoader().load('assets/marble.jpg');
+const floorMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, map: floor } );
+
 
 class WaterSimulation {
 
   constructor() {
     this._camera = new THREE.OrthographicCamera(0, 1, 1, 0, 0, 2000);
 
-    this._geometry = new THREE.PlaneBufferGeometry(2, 2);
+    this._geometry = new THREE.PlaneBufferGeometry(1.67, 1.67,waterSize, waterSize);
+    // this._geometry = new THREE.CircleGeometry(1.2,32);
     //this._geometry = new THREE.BoxGeometry();
     //this._geometry = new THREE.TorusGeometry(1,0.4,10,6,Math.PI*2);
-    //this._geometry.translate(waterPosition.x,waterPosition.y,waterPosition.z)
+    // this._geometry.translate(waterPosition.x,waterPosition.y,waterPosition.z);
     //this._geometry.rotateX(Math.PI / 4.); //too much for computer to handle
 
     this._targetA = new THREE.WebGLRenderTarget(waterSize, waterSize, {type: THREE.FloatType});
@@ -333,7 +340,7 @@ class Water {
       };
 
       this.mesh = new THREE.Mesh(this.geometry, this.material);
-      this.mesh.position.set(waterPosition.x, waterPosition.y, waterPosition.z);
+      // this.mesh.position.set(waterPosition.x, waterPosition.y, waterPosition.z);
     });
   }
 
@@ -402,7 +409,8 @@ class Caustics {
   constructor() {
     this.target = new THREE.WebGLRenderTarget(waterSize * 3., waterSize * 3., {type: THREE.FloatType});
 
-    this._waterGeometry = new THREE.PlaneBufferGeometry(2, 2, waterSize, waterSize);
+    this._waterGeometry = new THREE.PlaneBufferGeometry(2.3, 2.3, waterSize, waterSize);
+    // this._geometry = new THREE.CircleGeometry(1.2,32);
 
     const shadersPromises = [
       loadFile('shaders/caustics/water_vertex.glsl'),
@@ -542,7 +550,7 @@ class Glass {
       };
 
       this.mesh = new THREE.Mesh(this.geometry, this.material);
-      this.mesh.position.set(waterPosition.x, waterPosition.y, waterPosition.z);
+      // this.mesh.position.set(waterPosition.x, waterPosition.y, waterPosition.z);
     });
   }
 
@@ -598,7 +606,7 @@ const bowlGeometry = new THREE.LatheGeometry(points);
 // const bowlGeometry = new THREE.BoxGeometry(1,1,1);
 bowlGeometry.computeVertexNormals();
 // bowlGeometry.scale(1,.15,1);
-bowlGeometry.translate(0,-0.5,0);
+bowlGeometry.translate(0,0.4,0);
 bowlGeometry.rotateX(Math.PI/2);
 const bowl = new Glass(bowlGeometry);
 
@@ -701,7 +709,10 @@ Promise.all(loaded).then(() => {
   environment.setGeometries(envGeometries);
 
   environment.addTo(scene);
-  // scene.add(water.mesh);
+
+  const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+  scene.add(floorMesh);
+  scene.add(water.mesh);
   scene.add(bowl.mesh);
 
   caustics.setDeltaEnvTexture(1. / environmentMap.size);

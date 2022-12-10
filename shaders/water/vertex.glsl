@@ -4,7 +4,7 @@ varying vec2 refractedPosition[3];
 varying vec3 reflected;
 varying float reflectionFactor;
 
-const float refractionFactor = 1.;
+const float refractionFactor = 0.9;
 
 const float fresnelBias = 0.1;
 const float fresnelPower = 2.;

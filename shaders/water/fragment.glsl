@@ -16,5 +16,5 @@ void main() {
   refractedColor.g = texture2D(envMap, refractedPosition[1] * 0.5 + 0.5).g;
   refractedColor.b = texture2D(envMap, refractedPosition[2] * 0.5 + 0.5).b;
 
-  gl_FragColor = vec4(mix(refractedColor, reflectedColor, clamp(reflectionFactor, 0., 1.)), 1.);
+  gl_FragColor = vec4(mix(refractedColor, reflectedColor, clamp(reflectionFactor, 0., 1.)), 1.) + (0.2)*vec4(15.0/255.0, 242.0/255.0, 242.0/255.0,0.); // add bias to make bluish
 }

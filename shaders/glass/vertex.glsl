@@ -6,7 +6,7 @@ varying float reflectionFactor;
 
 const float refractionFactor = 1.;
 
-const float fresnelBias = -0.5;
+const float fresnelBias = -0.9;
 const float fresnelPower = 2.;
 const float fresnelScale = 1.;
 
