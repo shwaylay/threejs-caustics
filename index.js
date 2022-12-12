@@ -57,7 +57,7 @@ controls.target = waterPosition;
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2. - 0.1;
 
-controls.minDistance = 3.5;
+controls.minDistance = 4.5;
 controls.maxDistance = 5.;
 
 // Target for computing the water refraction
@@ -667,7 +667,9 @@ function animate() {
   water.mesh.visible = false;
   interiorWater.mesh.visible = false;
   bowl.mesh.visible = false;
-  camera.position.set(camera.position.x, camera.position.y, camera.position.z+.75);
+  let waterOffset = 1;
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z+waterOffset);
+  camera.lookAt(0,0,waterOffset);
   renderer.render(scene, camera);
 
   water.setEnvMapTexture(temporaryRenderTarget.texture);
@@ -681,7 +683,8 @@ function animate() {
 
   water.mesh.visible = true;
   interiorWater.mesh.visible = true;
-  camera.position.set(camera.position.x, camera.position.y, camera.position.z-.75);
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z-waterOffset);
+  camera.lookAt(0,0,0);
   renderer.render(scene, camera);
   // bowl.mesh.visible = true;
 
@@ -690,7 +693,9 @@ function animate() {
   renderer.setClearColor(white, 1);
   renderer.clear();
 
-  camera.position.set(camera.position.x, camera.position.y, camera.position.z+.5);
+  let glassOffset = 0.55;
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z+glassOffset);
+  camera.lookAt(0,0,glassOffset);
   renderer.render(scene, camera);
 
   // water.setEnvMapTexture(temporaryRenderTarget.texture);
@@ -704,7 +709,8 @@ function animate() {
   // water.mesh.visible = true;
   bowl.mesh.visible = true;
 
-  camera.position.set(camera.position.x, camera.position.y, camera.position.z-.5);
+  camera.lookAt(0,0,0);
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z-glassOffset);
   renderer.render(scene, camera);
 
   controls.update();
