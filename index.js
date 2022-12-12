@@ -99,7 +99,7 @@ new THREE.Vector2(-0.9,0), new THREE.Vector2(0,0)*/];
 
 const waterGeometry = new THREE.CircleGeometry(0.9,32);
 // const waterGeometry = new THREE.PlaneBufferGeometry(1.6,1.6, waterSize, waterSize);
-waterGeometry.translate(0,0,1);
+waterGeometry.translate(0,0,1.5);
 //const waterGeometry =new THREE.TorusGeometry(1,0.4,10,6,Math.PI*2);
 // const waterGeometry = new THREE.BoxGeometry(1,1,1,waterSize,waterSize,waterSize);
 ////const waterGeometry = new THREE.TetrahedronGeometry();
@@ -619,7 +619,7 @@ bowlGeometry.computeVertexNormals();
 interiorWaterGeometry.computeVertexNormals();
 // bowlGeometry.scale(1,.15,1);
 bowlGeometry.translate(0,0.4,0);
-interiorWaterGeometry.translate(0,-0.2,0);
+interiorWaterGeometry.translate(0,0.25,0);
 bowlGeometry.rotateX(Math.PI/2);
 interiorWaterGeometry.rotateX(Math.PI/2);
 const interiorWater = new Water(interiorWaterGeometry);
