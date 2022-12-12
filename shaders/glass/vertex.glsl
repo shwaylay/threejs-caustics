@@ -11,7 +11,7 @@ const float fresnelPower = 2.;
 const float fresnelScale = 1.;
 
 // Air refractive index / Glass refractive index
-const float eta = 1.0/1.52;
+const float eta = -1.0/1.52;
 
 
 void main() {

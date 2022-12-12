@@ -63,6 +63,9 @@ controls.maxDistance = 5.;
 // Target for computing the water refraction
 const temporaryRenderTarget = new THREE.WebGLRenderTarget(width, height);
 
+// Target for computing glass refraction
+const temporaryRenderTarget2 = new THREE.WebGLRenderTarget(width, height);
+
 // Clock
 const clock = new THREE.Clock();
 // Ray caster
@@ -85,10 +88,18 @@ let points = [new THREE.Vector2(0,0), new THREE.Vector2(-1,0),
               new THREE.Vector2(-0.9,1.25), new THREE.Vector2(-1,1),
               new THREE.Vector2(-1.1,0.75), new THREE.Vector2(-1.2,-0.5),
               new THREE.Vector2(-0.9,0), new THREE.Vector2(0,0)];
+//water inside fish bowl geometry
+let points2 = [new THREE.Vector2(0,0.1), new THREE.Vector2(-0.9,0.1),
+  new THREE.Vector2(-1.2,-0.5), new THREE.Vector2(-1.1,0.75),
+  new THREE.Vector2(-1,1), new THREE.Vector2(-0.9,1.25),
+  /*new THREE.Vector2(-0.8,1.5),
+  new THREE.Vector2(-0.9,1.25), new THREE.Vector2(-1,1),
+  new THREE.Vector2(-1.1,0.75), new THREE.Vector2(-1.2,-0.5),
+new THREE.Vector2(-0.9,0), new THREE.Vector2(0,0)*/];
 
-// const waterGeometry = new THREE.CircleGeometry(1.2,32);
-const waterGeometry = new THREE.PlaneBufferGeometry(1.6,1.6, waterSize, waterSize);
-waterGeometry.translate(0,0,1.25);
+const waterGeometry = new THREE.CircleGeometry(0.9,32);
+// const waterGeometry = new THREE.PlaneBufferGeometry(1.6,1.6, waterSize, waterSize);
+waterGeometry.translate(0,0,1);
 //const waterGeometry =new THREE.TorusGeometry(1,0.4,10,6,Math.PI*2);
 // const waterGeometry = new THREE.BoxGeometry(1,1,1,waterSize,waterSize,waterSize);
 ////const waterGeometry = new THREE.TetrahedronGeometry();
@@ -315,7 +326,7 @@ class WaterSimulation {
 
 class Water {
 
-  constructor() {
+  constructor(waterGeometry) {
     this.geometry = waterGeometry;
 
     const shadersPromises = [
@@ -559,7 +570,6 @@ class Glass {
   }
 
 }
-
 class Debug {
 
   constructor() {
@@ -601,13 +611,18 @@ class Debug {
 
 const waterSimulation = new WaterSimulation();
 
-const water = new Water();
+const water = new Water(waterGeometry);
 const bowlGeometry = new THREE.LatheGeometry(points);
+const interiorWaterGeometry = new THREE.LatheGeometry(points2);
 // const bowlGeometry = new THREE.BoxGeometry(1,1,1);
 bowlGeometry.computeVertexNormals();
+interiorWaterGeometry.computeVertexNormals();
 // bowlGeometry.scale(1,.15,1);
 bowlGeometry.translate(0,0.4,0);
+interiorWaterGeometry.translate(0,-0.2,0);
 bowlGeometry.rotateX(Math.PI/2);
+interiorWaterGeometry.rotateX(Math.PI/2);
+const interiorWater = new Water(interiorWaterGeometry);
 const bowl = new Glass(bowlGeometry);
 
 const environmentMap = new EnvironmentMap();
@@ -650,11 +665,14 @@ function animate() {
   renderer.clear();
 
   water.mesh.visible = false;
+  interiorWater.mesh.visible = false;
   bowl.mesh.visible = false;
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z+.75);
   renderer.render(scene, camera);
 
   water.setEnvMapTexture(temporaryRenderTarget.texture);
-  bowl.setEnvMapTexture(temporaryRenderTarget.texture);
+  interiorWater.setEnvMapTexture(temporaryRenderTarget.texture);
+  // bowl.setEnvMapTexture(temporaryRenderTarget.texture);
 
   // Then render the final scene with the refractive water
   renderer.setRenderTarget(null);
@@ -662,7 +680,31 @@ function animate() {
   renderer.clear();
 
   water.mesh.visible = true;
+  interiorWater.mesh.visible = true;
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z-.75);
+  renderer.render(scene, camera);
+  // bowl.mesh.visible = true;
+
+  // Render everything but the refractive water
+  renderer.setRenderTarget(temporaryRenderTarget2);
+  renderer.setClearColor(white, 1);
+  renderer.clear();
+
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z+.5);
+  renderer.render(scene, camera);
+
+  // water.setEnvMapTexture(temporaryRenderTarget.texture);
+  bowl.setEnvMapTexture(temporaryRenderTarget2.texture);
+
+  // Then render the final scene with the refractive water
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(white, 1);
+  renderer.clear();
+
+  // water.mesh.visible = true;
   bowl.mesh.visible = true;
+
+  camera.position.set(camera.position.x, camera.position.y, camera.position.z-.5);
   renderer.render(scene, camera);
 
   controls.update();
@@ -713,6 +755,7 @@ Promise.all(loaded).then(() => {
   const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
   scene.add(floorMesh);
   scene.add(water.mesh);
+  scene.add(interiorWater.mesh);
   scene.add(bowl.mesh);
 
   caustics.setDeltaEnvTexture(1. / environmentMap.size);
