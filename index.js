@@ -30,7 +30,7 @@ const waterSize = 512;
 
 // Create directional light
 // TODO Replace this by a THREE.DirectionalLight and use the provided matrix (check that it's an Orthographic matrix as expected)
-const light = [0., 0.2, -0.5];
+const light = [0., 0.3, -1.];
 const lightCamera = new THREE.OrthographicCamera(-1.2, 1.2, 1.2, -1.2, near, far);
 lightCamera.position.set(0., 0., 1.5);
 lightCamera.lookAt(0, 0, 0);
@@ -57,8 +57,8 @@ controls.target = waterPosition;
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2. - 0.1;
 
-controls.minDistance = 4.5;
-controls.maxDistance = 5.;
+controls.minDistance = 3.5;
+controls.maxDistance = 7.;
 
 // Target for computing the water refraction
 const temporaryRenderTarget = new THREE.WebGLRenderTarget(width, height);
@@ -148,6 +148,7 @@ const indices = new Uint32Array([
 const floorGeometry = new THREE.BoxGeometry(5, 5, 1);
 floorGeometry.translate(0,0,-0.6);
 const tankGeometry = new THREE.CircleGeometry(1, 32);
+// const tankGeometry = new THREE.PlaneBufferGeometry(2,2);
 
 const objLoader = new THREE.OBJLoader();
 let shark;
@@ -420,7 +421,7 @@ class Caustics {
   constructor() {
     this.target = new THREE.WebGLRenderTarget(waterSize * 3., waterSize * 3., {type: THREE.FloatType});
 
-    this._waterGeometry = new THREE.PlaneBufferGeometry(2.3, 2.3, waterSize, waterSize);
+    this._waterGeometry = new THREE.PlaneBufferGeometry(2.7, 2.7, waterSize, waterSize);
     // this._geometry = new THREE.CircleGeometry(1.2,32);
 
     const shadersPromises = [
@@ -667,7 +668,7 @@ function animate() {
   water.mesh.visible = false;
   interiorWater.mesh.visible = false;
   bowl.mesh.visible = false;
-  let waterOffset = 1;
+  let waterOffset = 0.7;
   camera.position.set(camera.position.x, camera.position.y, camera.position.z+waterOffset);
   camera.lookAt(0,0,waterOffset);
   renderer.render(scene, camera);
@@ -693,7 +694,7 @@ function animate() {
   renderer.setClearColor(white, 1);
   renderer.clear();
 
-  let glassOffset = 0.55;
+  let glassOffset = 0.3;
   camera.position.set(camera.position.x, camera.position.y, camera.position.z+glassOffset);
   camera.lookAt(0,0,glassOffset);
   renderer.render(scene, camera);
@@ -768,13 +769,13 @@ Promise.all(loaded).then(() => {
 
   canvas.addEventListener('mousemove', { handleEvent: onMouseMove });
 
-  for (var i = 0; i < 5; i++) {
-    waterSimulation.addDrop(
-      renderer,
-      Math.random() * 2 - 1, Math.random() * 2 - 1,
-      0.03, (i & 1) ? 0.02 : -0.02
-    );
-  }
+  // for (var i = 0; i < 5; i++) {
+  //   waterSimulation.addDrop(
+  //     renderer,
+  //     Math.random() * 2 - 1, Math.random() * 2 - 1,
+  //     0.03, (i & 1) ? 0.02 : -0.02
+  //   );
+  // }
 
   animate();
 });
